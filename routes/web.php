@@ -20,3 +20,26 @@ Route::get('/', function () {
 Route::get('coba', function(){
     return "Halo cuyy";
 });
+
+Route::get('coba1', function(){
+    return ['a', 'b', 'c'];
+});
+
+Route::get('coba2', function(){
+    return [
+        'a' => 'awikwok' ,
+        'b' => 'babibu',
+        'c' => 'chuaks'
+    ];
+});
+
+Route::get('coba3', function(){
+    return response() -> json(
+        [
+            'a' => 'awikwok' ,
+            'b' => 'babibu' ,
+            'c' => 'chuaks'
+        ], 201
+    );
+});
+
