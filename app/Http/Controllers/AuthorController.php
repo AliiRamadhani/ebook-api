@@ -3,81 +3,79 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Author;
+use App\Models\User;
+use GuzzleHttp\Psr7\Message;
+use Illuminate\Support\Facades\Hash;
 
-class AuthorController extends Controller
+class AuthController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+    public function me()
     {
-        $data = Author::all();
-
-        return $data;
+        return [
+            'NIS' => 3103120114,
+            'Name' => 'Ivan Mahadika Yanuarizqi',
+            'Phone' => '081238683080',
+            'Class' => 'XII RPL 4'
+        ];
     }
 
-    
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    public function register(Request $request)
     {
-        $data = Author::create($request->all());
-        $data->save();
+        $fields = $request->validate([
+            'name' => 'required|string|max:100',
+            'email' => 'required|string|unique:users,email',
+            'password' => 'required|string|confirmed|min:6'
+        ]);
 
-        $data_akhir = Author::all();
-        return $data_akhir;
+        $user = User::create([
+            'name' => $fields['name'],
+            'email' => $fields['email'],
+            'password' => bcrypt($fields['password'])
+        ]);
+
+        $token = $user->createToken('tokenku')->plainTextToken;
+
+        $response = [
+            'user' => $user,
+            'token' => $token
+        ];
+
+        return response($response, 201);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
+    public function login(Request $request)
     {
-        $author_show = Author::findOrFail($id);
-        return $author_show;
+        $fields = $request->validate([
+            'email' =>  'required|string',
+            'password' => 'required|string'
+        ]);
+
+        // Check email
+        $user = User::where('email', $fields['email'])->first();
+
+        // Check password
+        if (!$user || !Hash::check($fields['password'], $user->password))
+            return response([
+                'message' => 'unauthorized'
+            ], 401);
+
+        $token = $user->createToken('tokenku')->plainTextToken;
+
+        $response = [
+            'user' => $user,
+            'token' => $token,
+            'message' => 'login'
+        ];
+
+        return response($response, 201);
     }
 
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
+    public function logout(Request $request)
     {
-        $author_update = Author::findOrFail($id);
-        $author_update->update($request->all());
-        $author_update->save();
+        $request->user()->currentAccessToken()->delete();
 
-        $data = Author::all();
-        return $data;
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        $author_delete = Author::findOrFail($id);
-        $author_delete->delete();
-
-        $data = Author::all();
-        return $data;
+        return [
+            'message' => 'Logged out'
+        ];
     }
 }
